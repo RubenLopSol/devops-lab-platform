@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: openpanel-app
+  namespace: openpanel
+spec:
+  type: ClusterIP
+  selector:
+    app: openpanel-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000

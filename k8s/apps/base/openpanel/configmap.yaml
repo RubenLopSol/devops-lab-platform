@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openpanel-app-config
+  namespace: openpanel
+data:
+  APP_ENV: "base"
+  APP_MESSAGE: "Hello from OpenPanel base"

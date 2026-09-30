@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openpanel-app
+  namespace: openpanel
+  labels:
+    app: openpanel-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openpanel-app
+  template:
+    metadata:
+      labels:
+        app: openpanel-app
+    spec:
+      containers:
+        - name: openpanel-app
+          image: openpanel-app
+          imagePullPolicy: IfNotPresent
+          envFrom:
+          - configMapRef:
+              name: openpanel-app-config
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
