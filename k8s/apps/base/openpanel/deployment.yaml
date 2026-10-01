@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: openpanel-app
-          image: openpanel-app
+          image: ghcr.io/rubenlopsol/devops-lab-app
           imagePullPolicy: IfNotPresent
           envFrom:
           - configMapRef:
