@@ -1,0 +1,66 @@
+name: Update App Image Tag
+
+on:
+  repository_dispatch:
+    types: [app-image-published]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Short commit SHA, for example bbb1dad"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  TRACKED_BRANCH: main
+
+jobs:
+  update-image-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout platform repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TRACKED_BRANCH }}
+
+      - name: Resolve short SHA
+        id: vars
+        run: |
+          SHORT="${{ github.event.client_payload.sha || inputs.sha }}"
+
+          if [ -z "$SHORT" ]; then
+            echo "No SHA provided"
+            exit 1
+          fi
+
+          echo "short=$SHORT" >> "$GITHUB_OUTPUT"
+          echo "tag=main-$SHORT" >> "$GITHUB_OUTPUT"
+          echo "release_tag=release/main-$SHORT" >> "$GITHUB_OUTPUT"
+
+      - name: Update Kustomize image tag
+        run: |
+          sed -i "s|newTag: .*|newTag: ${{ steps.vars.outputs.tag }}|" \
+            k8s/apps/overlays/dev/openpanel/kustomization.yaml
+
+      - name: Pin ArgoCD Application to release tag
+        run: |
+          sed -i "s|targetRevision: .*|targetRevision: ${{ steps.vars.outputs.release_tag }}|" \
+            k8s/infrastructure/base/argocd/applications/openpanel-dev-app.yaml
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add k8s/
+
+          git diff --staged --quiet || git commit -m "chore: update app image to ${{ steps.vars.outputs.tag }}"
+          git push origin HEAD:${{ env.TRACKED_BRANCH }}
+
+      - name: Create release tag
+        run: |
+          git tag "${{ steps.vars.outputs.release_tag }}"
+          git push origin "${{ steps.vars.outputs.release_tag }}"
