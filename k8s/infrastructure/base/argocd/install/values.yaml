@@ -1,0 +1,5 @@
+configs:
+  params:
+    # Keep the faster reconciliation interval we already had in the raw
+    # manifest install, now expressed as Helm chart values.
+    timeout.reconciliation: "60s"
