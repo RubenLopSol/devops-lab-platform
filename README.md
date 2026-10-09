@@ -240,9 +240,12 @@ make cluster-up
 Ese target ejecuta:
 
 ```text
-scripts/setup-minikube.sh
-scripts/install-argocd.sh
+make cluster-start
+make cluster-bootstrap
 ```
+
+`cluster-start` arranca/selecciona Minikube. `cluster-bootstrap` instala o
+reaplica ArgoCD y `bootstrap-app`. `cluster-up` ejecuta ambas fases.
 
 Internamente, el script de ArgoCD usa dos pasadas, como el proyecto original.
 
@@ -298,11 +301,13 @@ Comandos relacionados:
 ```bash
 make help
 make cluster-up
+make cluster-start
+make cluster-bootstrap
 make cluster-stop
+make cluster-delete
 make status
 make port-forward-argocd
 make argocd-password
-make cluster-down
 ```
 
 ## Deployment Strategy

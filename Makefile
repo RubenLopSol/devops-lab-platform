@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 PROFILE ?= openpanel-rebuild
 
-.PHONY: help cluster-up cluster-stop cluster-down minikube-up minikube-stop minikube-down install-argocd status argocd-password port-forward-argocd render-argocd
+.PHONY: help cluster-up cluster-start cluster-bootstrap cluster-stop cluster-down cluster-delete minikube-up minikube-stop minikube-down install-argocd status argocd-password port-forward-argocd render-argocd
 
 .DEFAULT_GOAL := help
 
@@ -12,17 +12,15 @@ help:
 	@echo "=========================="
 	@echo ""
 	@echo "Cluster"
-	@echo "  make cluster-up          Start Minikube, install ArgoCD, apply bootstrap-app"
-	@echo "  make cluster-stop        Stop the Minikube profile without deleting it"
-	@echo "  make cluster-down        Delete the Minikube profile"
-	@echo "  make minikube-up         Start/select the Minikube profile only"
-	@echo "  make minikube-stop       Stop the Minikube profile only"
-	@echo "  make minikube-down       Delete the Minikube profile only"
+	@echo "  make cluster-start      Start/select the Minikube profile"
+	@echo "  make cluster-bootstrap  Install/re-apply ArgoCD and bootstrap-app"
+	@echo "  make cluster-up         cluster-start + cluster-bootstrap"
+	@echo "  make cluster-stop       Stop the Minikube profile without deleting it"
+	@echo "  make cluster-delete     Delete the Minikube profile"
 	@echo ""
 	@echo "ArgoCD"
-	@echo "  make install-argocd      Install ArgoCD and apply bootstrap-app"
-	@echo "  make status              Show ArgoCD Applications and deployed image"
-	@echo "  make argocd-password     Print the initial admin password"
+	@echo "  make status             Show cluster, ArgoCD, app and pod status"
+	@echo "  make argocd-password    Print the initial admin password"
 	@echo "  make port-forward-argocd Forward ArgoCD UI to https://localhost:8081"
 	@echo ""
 	@echo "Validation"
@@ -32,14 +30,20 @@ help:
 	@echo "  PROFILE=openpanel-rebuild  Minikube profile name"
 	@echo ""
 
-cluster-up: minikube-up install-argocd
+cluster-up: cluster-start cluster-bootstrap
 	@echo ""
 	@echo "Cluster bootstrap complete."
 	@echo "Run: make status"
 
-cluster-down: minikube-down
+cluster-start: minikube-up
+
+cluster-bootstrap: install-argocd
 
 cluster-stop: minikube-stop
+
+cluster-delete: minikube-down
+
+cluster-down: cluster-delete
 
 minikube-up:
 	@bash scripts/setup-minikube.sh "$(PROFILE)"
@@ -54,14 +58,26 @@ install-argocd:
 	@bash scripts/install-argocd.sh
 
 status:
+	@echo "Context"
+	@echo "-------"
+	@kubectl config current-context
+	@echo ""
+	@echo "ArgoCD Applications"
+	@echo "-------------------"
 	@kubectl get applications -n argocd
 	@echo ""
+	@echo "OpenPanel GitOps"
+	@echo "----------------"
 	@printf "openpanel-dev project: "
 	@kubectl get application openpanel-dev -n argocd -o jsonpath='{.spec.project}'; echo
 	@printf "openpanel-dev revision: "
 	@kubectl get application openpanel-dev -n argocd -o jsonpath='{.spec.source.targetRevision}'; echo
 	@printf "deployed image: "
 	@kubectl get deployment openpanel-app -n openpanel -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
+	@echo ""
+	@echo "OpenPanel Pods"
+	@echo "--------------"
+	@kubectl get pods -n openpanel -o wide
 
 argocd-password:
 	@kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
