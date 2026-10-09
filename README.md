@@ -298,6 +298,7 @@ Comandos relacionados:
 ```bash
 make help
 make cluster-up
+make cluster-stop
 make status
 make port-forward-argocd
 make argocd-password

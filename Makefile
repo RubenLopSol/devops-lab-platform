@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 PROFILE ?= openpanel-rebuild
 
-.PHONY: help cluster-up cluster-down minikube-up minikube-down install-argocd status argocd-password port-forward-argocd render-argocd
+.PHONY: help cluster-up cluster-stop cluster-down minikube-up minikube-stop minikube-down install-argocd status argocd-password port-forward-argocd render-argocd
 
 .DEFAULT_GOAL := help
 
@@ -13,8 +13,10 @@ help:
 	@echo ""
 	@echo "Cluster"
 	@echo "  make cluster-up          Start Minikube, install ArgoCD, apply bootstrap-app"
+	@echo "  make cluster-stop        Stop the Minikube profile without deleting it"
 	@echo "  make cluster-down        Delete the Minikube profile"
 	@echo "  make minikube-up         Start/select the Minikube profile only"
+	@echo "  make minikube-stop       Stop the Minikube profile only"
 	@echo "  make minikube-down       Delete the Minikube profile only"
 	@echo ""
 	@echo "ArgoCD"
@@ -37,8 +39,13 @@ cluster-up: minikube-up install-argocd
 
 cluster-down: minikube-down
 
+cluster-stop: minikube-stop
+
 minikube-up:
 	@bash scripts/setup-minikube.sh "$(PROFILE)"
+
+minikube-stop:
+	@minikube stop -p "$(PROFILE)"
 
 minikube-down:
 	@minikube delete -p "$(PROFILE)"
