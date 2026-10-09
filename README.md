@@ -80,6 +80,11 @@ k8s/
     │   ├── install/
     │   └── projects/
     └── overlays/dev/argocd/
+
+Makefile
+scripts/
+├── setup-minikube.sh
+└── install-argocd.sh
 ```
 
 Responsabilidades:
@@ -219,6 +224,86 @@ ArgoCD revision:  release/main-558a42f
 Deployment image: ghcr.io/rubenlopsol/devops-lab-app:main-558a42f
 ```
 
+## Recrear El Cluster Desde Cero
+
+En un cluster nuevo hay una excepcion normal al flujo GitOps: ArgoCD todavia no
+existe, asi que no puede instalarse a si mismo. Hace falta un bootstrap manual
+minimo. En este rebuild, igual que en el proyecto original, ese bootstrap queda
+encapsulado en `Makefile` y scripts.
+
+Orden recomendado desde cero:
+
+```bash
+make cluster-up
+```
+
+Ese target ejecuta:
+
+```text
+scripts/setup-minikube.sh
+scripts/install-argocd.sh
+```
+
+Internamente, el script de ArgoCD usa dos pasadas, como el proyecto original.
+
+Primera pasada: instala ArgoCD desde la base Helm/Kustomize para que existan el
+controller y los CRDs:
+
+```bash
+kustomize build --enable-helm k8s/infrastructure/base/argocd/install | kubectl apply -f -
+```
+
+Este paso instala ArgoCD y deja configurado `argocd-cm` con:
+
+```text
+kustomize.buildOptions: --enable-helm --load-restrictor=LoadRestrictionsNone
+```
+
+Esa opcion es necesaria para que ArgoCD pueda renderizar el overlay de entorno,
+porque `k8s/infrastructure/overlays/dev/argocd` usa `helmCharts` dentro de
+Kustomize.
+
+Segunda pasada: cuando ArgoCD y sus CRDs estan listos, aplica el overlay de
+entorno completo:
+
+```bash
+kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/argocd | kubectl apply -f -
+```
+
+Finalmente aplica la Application raiz:
+
+```bash
+kubectl apply -f k8s/infrastructure/overlays/dev/argocd/bootstrap-app.yaml
+```
+
+A partir de ahi ArgoCD toma el control:
+
+```text
+Application/bootstrap-app
+  -> k8s/infrastructure/overlays/dev/argocd
+  -> AppProject/openpanel + Application/openpanel-dev
+  -> k8s/apps/overlays/dev/openpanel
+  -> recursos reales de OpenPanel
+```
+
+La frontera es:
+
+```text
+Antes de ArgoCD: bootstrap manual minimo.
+Despues de ArgoCD: GitOps.
+```
+
+Comandos relacionados:
+
+```bash
+make help
+make cluster-up
+make status
+make port-forward-argocd
+make argocd-password
+make cluster-down
+```
+
 ## Deployment Strategy
 
 El Deployment de OpenPanel usa:
@@ -254,6 +339,12 @@ Render del overlay dev de ArgoCD:
 
 ```bash
 kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/argocd
+```
+
+Render de la instalacion base de ArgoCD:
+
+```bash
+kustomize build --enable-helm k8s/infrastructure/base/argocd/install
 ```
 
 Revision usada por la Application:
