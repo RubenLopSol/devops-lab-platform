@@ -8,7 +8,7 @@ resources:
 
 images:
   - name: ghcr.io/rubenlopsol/devops-lab-app
-    newTag: main-558a42f
+    newTag: main-19f8aad
 
 patches:
   - path: configmap-patch.yaml
