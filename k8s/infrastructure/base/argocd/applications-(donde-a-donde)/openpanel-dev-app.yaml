@@ -4,7 +4,7 @@ metadata:
   name: openpanel-dev
   namespace: argocd
 spec:
-  project: default
+  project: openpanel
 
   source:
     repoURL: https://github.com/RubenLopSol/devops-lab-platform.git

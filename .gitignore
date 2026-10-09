@@ -1,2 +1,2 @@
-k8s/infrastructure/base/argocd/install/charts/
+k8s/infrastructure/**/charts/
 AGENTS.md

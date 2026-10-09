@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: openpanel
+  namespace: argocd
+spec:
+  description: OpenPanel rebuild project
+  sourceRepos:
+    - https://github.com/RubenLopSol/devops-lab-platform.git
+  destinations:
+    - namespace: openpanel
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Service
+    - group: apps
+      kind: Deployment

@@ -1,0 +1,10 @@
+configs:
+  cm:
+    # Allow ArgoCD to render Kustomize overlays that use Helm charts and shared
+    # values files outside the overlay directory, matching the original project
+    # structure.
+    kustomize.buildOptions: "--enable-helm --load-restrictor=LoadRestrictionsNone"
+  params:
+    # Keep the faster reconciliation interval we already had in the raw
+    # manifest install, now expressed as Helm chart values.
+    timeout.reconciliation: "60s"

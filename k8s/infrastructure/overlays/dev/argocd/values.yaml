@@ -1,0 +1,5 @@
+# Dev-specific ArgoCD Helm values.
+# Keep this file even when empty so the overlay mirrors the original project
+# structure and can grow with environment-specific settings.
+{}
+

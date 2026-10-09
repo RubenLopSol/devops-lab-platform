@@ -75,7 +75,11 @@ k8s/
 │   ├── base/openpanel/
 │   └── overlays/dev/openpanel/
 └── infrastructure/
-    └── base/argocd/
+    ├── base/argocd/
+    │   ├── applications/
+    │   ├── install/
+    │   └── projects/
+    └── overlays/dev/argocd/
 ```
 
 Responsabilidades:
@@ -162,9 +166,9 @@ Una Application indica:
 Modelo actual:
 
 ```text
-argocd-applications
-  watches: k8s/infrastructure/base/argocd/applications
-  applies: ArgoCD Application objects
+bootstrap-app
+  watches: k8s/infrastructure/overlays/dev/argocd
+  applies: ArgoCD install config, AppProjects, and Application objects
 
 openpanel-dev
   watches: k8s/apps/overlays/dev/openpanel
@@ -176,8 +180,10 @@ Esto sigue el patron app-of-apps:
 ```text
 bootstrap-app.yaml
    ↓ crea la Application raiz
-Application/argocd-applications
-   ↓ gestiona otras Applications desde Git
+Application/bootstrap-app
+   ↓ gestiona el overlay dev de ArgoCD desde Git
+AppProject/openpanel + Application/openpanel-dev
+   ↓ limita y declara que puede gestionar la app
 Application/openpanel-dev
    ↓ despliega manifests reales
 Deployment/Service/ConfigMap/Namespace
@@ -242,6 +248,12 @@ Estado de ArgoCD:
 
 ```bash
 kubectl get applications -n argocd
+```
+
+Render del overlay dev de ArgoCD:
+
+```bash
+kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/argocd
 ```
 
 Revision usada por la Application:
