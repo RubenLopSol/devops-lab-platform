@@ -19,6 +19,15 @@ spec:
         - name: openpanel-app
           image: ghcr.io/rubenlopsol/devops-lab-app
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
           envFrom:
           - configMapRef:
               name: openpanel-app-config

@@ -30,7 +30,8 @@ else
     --driver="${DRIVER}" \
     --cpus="${CPUS}" \
     --memory="${MEMORY}" \
-    --disk-size="${DISK_SIZE}"
+    --disk-size="${DISK_SIZE}" \
+    --addons=metrics-server
 fi
 
 kubectl config use-context "${PROFILE}" >/dev/null
