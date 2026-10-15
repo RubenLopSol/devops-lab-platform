@@ -1,0 +1,54 @@
+name: Validate platform manifests
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  KUSTOMIZE_VERSION: "v5.3.0"
+  KUSTOMIZE_SHA256: "3ab32f92360d752a2a53e56be073b649abc1e7351b912c0fb32b960d1def854c"
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout platform repo
+        uses: actions/checkout@v4
+
+      - name: Install Kustomize
+        run: |
+          FILENAME="kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/${FILENAME}" \
+            -o "${FILENAME}"
+          echo "${KUSTOMIZE_SHA256}  ${FILENAME}" | sha256sum --check
+          tar xzf "${FILENAME}"
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.15.4"
+
+      - name: Render OpenPanel dev
+        run: kustomize build k8s/apps/overlays/dev/openpanel > /tmp/openpanel-dev.yaml
+
+      - name: Render ArgoCD install
+        run: kustomize build --enable-helm k8s/infrastructure/base/argocd/install > /tmp/argocd-install.yaml
+
+      - name: Render ArgoCD dev overlay
+        run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/argocd > /tmp/argocd-dev.yaml
