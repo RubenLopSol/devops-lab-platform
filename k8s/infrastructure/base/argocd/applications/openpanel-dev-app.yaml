@@ -15,9 +15,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: openpanel
 
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
+  # syncPolicy:
+  #   automated:
+  #     prune: true
+  #     selfHeal: true
+
