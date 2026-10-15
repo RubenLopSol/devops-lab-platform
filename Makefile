@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 PROFILE ?= openpanel-rebuild
 
-.PHONY: help cluster-up cluster-start cluster-bootstrap cluster-stop cluster-down cluster-delete minikube-up minikube-stop minikube-down install-argocd status argocd-password port-forward-argocd render-argocd
+.PHONY: help cluster-up cluster-start cluster-bootstrap cluster-stop cluster-down cluster-delete minikube-up minikube-stop minikube-down install-argocd status argocd-password port-forward-argocd render-argocd preflight
 
 .DEFAULT_GOAL := help
 
@@ -17,6 +17,7 @@ help:
 	@echo "  make cluster-up         cluster-start + cluster-bootstrap"
 	@echo "  make cluster-stop       Stop the Minikube profile without deleting it"
 	@echo "  make cluster-delete     Delete the Minikube profile"
+	@echo "  make preflight         Check local tools before cluster-up"
 	@echo ""
 	@echo "ArgoCD"
 	@echo "  make status             Show cluster, ArgoCD, app and pod status"
@@ -30,7 +31,12 @@ help:
 	@echo "  PROFILE=openpanel-rebuild  Minikube profile name"
 	@echo ""
 
-cluster-up: cluster-start cluster-bootstrap
+preflight:
+	@bash scripts/preflight.sh
+
+cluster-up: preflight
+	@$(MAKE) cluster-start
+	@$(MAKE) cluster-bootstrap
 	@echo ""
 	@echo "Cluster bootstrap complete."
 	@echo "Run: make status"
