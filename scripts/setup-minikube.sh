@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROFILE="${1:-openpanel-rebuild}"
-K8S_VERSION="${K8S_VERSION:-v1.31.0}"
+K8S_VERSION="${K8S_VERSION:-v1.34.0}"
 CPUS="${CPUS:-2}"
 MEMORY="${MEMORY:-4096}"
 DISK_SIZE="${DISK_SIZE:-30g}"
