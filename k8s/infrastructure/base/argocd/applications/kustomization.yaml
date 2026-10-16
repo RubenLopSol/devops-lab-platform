@@ -5,3 +5,4 @@ resources:
   - namespaces-app.yaml
   - openpanel-dev-app.yaml
   - local-path-provisioner-app.yaml
+  - argo-rollouts-app.yaml

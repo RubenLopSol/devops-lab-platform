@@ -1,0 +1,3 @@
+- op: replace
+  path: /spec/source/path
+  value: k8s/infrastructure/overlays/prod/argo-rollouts
