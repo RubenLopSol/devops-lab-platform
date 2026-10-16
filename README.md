@@ -75,10 +75,13 @@ k8s/
 │   ├── base/openpanel/
 │   └── overlays/dev/openpanel/
 └── infrastructure/
-    ├── base/argocd/
-    │   ├── applications/
-    │   ├── install/
-    │   └── projects/
+    ├── base/
+    │   ├── argocd/
+    │   │   ├── applications/
+    │   │   ├── install/
+    │   │   └── projects/
+    │   ├── local-path-provisioner/
+    │   └── namespaces/
     └── overlays/dev/argocd/
 
 Makefile
@@ -173,7 +176,11 @@ Modelo actual:
 ```text
 bootstrap-app
   watches: k8s/infrastructure/overlays/dev/argocd
-  applies: ArgoCD install config, AppProjects, and Application objects
+  applies: ArgoCD config, AppProjects, and Application objects
+
+local-path-provisioner
+  watches: k8s/infrastructure/base/local-path-provisioner
+  applies: controller, RBAC, ConfigMap, and StorageClass/local-path
 
 openpanel-dev
   watches: k8s/apps/overlays/dev/openpanel
@@ -187,14 +194,23 @@ bootstrap-app.yaml
    ↓ crea la Application raiz
 Application/bootstrap-app
    ↓ gestiona el overlay dev de ArgoCD desde Git
-AppProject/openpanel + Application/openpanel-dev
-   ↓ limita y declara que puede gestionar la app
-Application/openpanel-dev
-   ↓ despliega manifests reales
-Deployment/Service/ConfigMap/Namespace
-   ↓ crean la app en Kubernetes
-Pods de OpenPanel
+AppProject/openpanel + Applications independientes
+   ├── Application/openpanel-dev
+   │     ↓ despliega Deployment/Service/ConfigMap en openpanel
+   │     └── Pods de OpenPanel
+   └── Application/local-path-provisioner (project: default)
+         ↓ despliega RBAC/controller en local-path-storage
+         └── StorageClass/local-path (cluster-scoped)
 ```
+
+El controller corre en `local-path-storage`; la StorageClass es un recurso de
+cluster. El provisioner no crea volúmenes por adelantado: espera una solicitud
+PVC. Por eso ahora existe la StorageClass, pero no hay PVC/PV: OpenPanel aún no
+solicita almacenamiento.
+
+La Application del provisioner usa `project: default`, como en el original,
+porque gestiona recursos de ámbito de clúster. El AppProject `openpanel` actual
+restringe los recursos cluster-scoped permitidos.
 
 ## Flujo GitOps Completo
 
@@ -247,6 +263,12 @@ make cluster-bootstrap
 `cluster-start` arranca/selecciona Minikube. `cluster-bootstrap` instala o
 reaplica ArgoCD y `bootstrap-app`. `cluster-up` ejecuta ambas fases.
 
+`make cluster-delete` elimina el perfil Minikube y todo su estado local. Se
+validó una recreación limpia ejecutando `make cluster-delete` y después
+`make cluster-up`: las cuatro Applications volvieron a `Synced`/`Healthy`, y
+OpenPanel y el provisioner volvieron a `Running`. No eliminar el perfil si se
+necesitan sus datos locales.
+
 Internamente, el script de ArgoCD usa dos pasadas, como el proyecto original.
 
 Primera pasada: instala ArgoCD desde la base Helm/Kustomize para que existan el
@@ -287,6 +309,10 @@ Application/bootstrap-app
   -> AppProject/openpanel + Application/openpanel-dev
   -> k8s/apps/overlays/dev/openpanel
   -> recursos reales de OpenPanel
+
+Application/local-path-provisioner
+  -> k8s/infrastructure/base/local-path-provisioner
+  -> controller y StorageClass/local-path
 ```
 
 La frontera es:
@@ -339,6 +365,8 @@ Estado de ArgoCD:
 
 ```bash
 kubectl get applications -n argocd
+kubectl get pods -n local-path-storage
+kubectl get storageclass local-path
 ```
 
 Render del overlay dev de ArgoCD:
@@ -397,14 +425,9 @@ https://localhost:8081
 - No se introducen herramientas extra, como KEDA u observabilidad, hasta que el
   workflow principal este completamente interiorizado.
 
-## Mejora Futura Anotada
+## Siguiente Paso Del Rebuild
 
-Mas adelante se anadira un workflow separado de validacion para el repo
-plataforma.
-
-Ese workflow deberia ejecutarse en `push` y `pull_request` del repo plataforma,
-renderizar rutas importantes con Kustomize/Helm y verificar manifests sin
-desplegar directamente.
-
-No debe mezclarse con el workflow actual de actualizacion de imagen, porque son
-responsabilidades distintas.
+La base de namespaces y almacenamiento ya está gestionada por Applications
+independientes y se ha validado desde un clúster limpio. El siguiente paso es
+reproducir los overlays `staging` y `prod` del proyecto original, antes de
+ampliar OpenPanel a un modelo multi-componente simplificado.
