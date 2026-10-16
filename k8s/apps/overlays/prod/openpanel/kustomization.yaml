@@ -1,0 +1,26 @@
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openpanel
+
+resources:
+  - ../../../base/openpanel
+
+commonAnnotations:
+  environment: prod
+  managed-by: kustomize
+
+labels:
+  - pairs:
+      env: prod
+    includeSelectors: false
+
+images:
+  - name: ghcr.io/rubenlopsol/devops-lab-app
+    newTag: main-d756099
+
+patches:
+  - path: configmap-patch.yaml
+
+
