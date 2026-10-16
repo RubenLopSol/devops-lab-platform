@@ -73,7 +73,9 @@ Contiene la declaracion GitOps del cluster:
 k8s/
 ├── apps/
 │   ├── base/openpanel/
-│   └── overlays/dev/openpanel/
+│   └── overlays/
+│       ├── dev/openpanel/
+│       └── prod/openpanel/
 └── infrastructure/
     ├── base/
     │   ├── argocd/
@@ -211,6 +213,19 @@ solicita almacenamiento.
 La Application del provisioner usa `project: default`, como en el original,
 porque gestiona recursos de ámbito de clúster. El AppProject `openpanel` actual
 restringe los recursos cluster-scoped permitidos.
+
+El overlay `prod` reutiliza la misma base de OpenPanel y cambia la configuración
+de entorno, etiquetas y anotaciones. El overlay de infraestructura `prod` crea
+la Application `openpanel-prod` y su `bootstrap-app`; ambos renderizan
+localmente, pero no se han aplicado ni desplegado. CI ya incluye el render de
+este overlay, pendiente de ejecutarse en GitHub tras el push. `staging` se omite
+en este rebuild.
+
+`scripts/install-argocd.sh [dev|prod]` y `make install-argocd ENVIRONMENT=dev|prod`
+permiten elegir el overlay; por defecto usan `dev`. El script bloquea `prod` si
+el contexto actual es `openpanel-rebuild`. Antes de desplegar producción se
+necesita un destino separado y fijar las Applications a una release inmutable
+del repositorio; no usar el clúster dev, donde se comparten nombres y namespace.
 
 ## Flujo GitOps Completo
 
@@ -428,6 +443,9 @@ https://localhost:8081
 ## Siguiente Paso Del Rebuild
 
 La base de namespaces y almacenamiento ya está gestionada por Applications
-independientes y se ha validado desde un clúster limpio. El siguiente paso es
-reproducir los overlays `staging` y `prod` del proyecto original, antes de
-ampliar OpenPanel a un modelo multi-componente simplificado.
+independientes y se ha validado desde un clúster limpio. Los overlays `prod` de
+app e infraestructura renderizan localmente; `openpanel-prod` aún no se ha
+desplegado y la ejecución de CI para estos últimos cambios está pendiente del
+push. El siguiente paso es diseñar el modelo multi-componente simplificado a
+partir de la base original (API, dashboard y worker), antes de añadir sus
+dependencias stateful.

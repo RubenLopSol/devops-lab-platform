@@ -3,8 +3,7 @@ set -euo pipefail
 
 ARGOCD_NAMESPACE="argocd"
 BASE_INSTALL="k8s/infrastructure/base/argocd/install"
-ARGOCD_OVERLAY="k8s/infrastructure/overlays/dev/argocd"
-BOOTSTRAP_APP="${ARGOCD_OVERLAY}/bootstrap-app.yaml"
+ENVIRONMENT="${1:-dev}"
 
 info() { printf "\n==> %s\n" "$*"; }
 ok() { printf "OK: %s\n" "$*"; }
@@ -16,6 +15,19 @@ require() {
 
 require kubectl
 require kustomize
+
+case "${ENVIRONMENT}" in
+  dev|prod) ;;
+  *) die "Usage: $0 [dev|prod]" ;;
+esac
+
+CURRENT_CONTEXT="$(kubectl config current-context)"
+if [[ "${ENVIRONMENT}" == "prod" && "${CURRENT_CONTEXT}" == "openpanel-rebuild" ]]; then
+  die "Refusing to install prod overlay on the dev context openpanel-rebuild"
+fi
+
+ARGOCD_OVERLAY="k8s/infrastructure/overlays/${ENVIRONMENT}/argocd"
+BOOTSTRAP_APP="${ARGOCD_OVERLAY}/bootstrap-app.yaml"
 
 [[ -d "${BASE_INSTALL}" ]] || die "Missing base install path: ${BASE_INSTALL}"
 [[ -d "${ARGOCD_OVERLAY}" ]] || die "Missing ArgoCD overlay path: ${ARGOCD_OVERLAY}"
@@ -37,7 +49,7 @@ kubectl rollout status deployment/argocd-repo-server -n "${ARGOCD_NAMESPACE}" --
 kubectl rollout status deployment/argocd-server -n "${ARGOCD_NAMESPACE}" --timeout=5m
 ok "ArgoCD workloads are ready"
 
-info "Pass 2: applying full dev ArgoCD overlay"
+info "Pass 2: applying full ${ENVIRONMENT} ArgoCD overlay"
 kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone "${ARGOCD_OVERLAY}" | kubectl apply -f -
 ok "ArgoCD overlay applied"
 

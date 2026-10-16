@@ -79,6 +79,9 @@ jobs:
       - name: Render ArgoCD dev overlay
         run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/argocd > /tmp/argocd-dev.yaml
 
+      - name: Render ArgoCD prod overlay
+        run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/prod/argocd > /tmp/argocd-prod.yaml
+
       - name: Lint OpenPanel dev manifests
         run: kube-linter lint /tmp/openpanel-dev.yaml --config .kube-linter.yaml
 
@@ -97,7 +100,8 @@ jobs:
             /tmp/openpanel-dev.yaml \
             /tmp/openpanel-prod.yaml \
             /tmp/argocd-install.yaml \
-            /tmp/argocd-dev.yaml
+            /tmp/argocd-dev.yaml \
+            /tmp/argocd-prod.yaml
   secret-scan:
     name: Secret Detection
     runs-on: ubuntu-latest

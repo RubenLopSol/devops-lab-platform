@@ -1,0 +1,9 @@
+- op: replace
+  path: /metadata/name
+  value: openpanel-prod
+- op: replace
+  path: /spec/source/path
+  value: k8s/apps/overlays/prod/openpanel
+- op: replace
+  path: /spec/source/targetRevision
+  value: main

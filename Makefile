@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 
 PROFILE ?= openpanel-rebuild
+ENVIRONMENT ?= dev
 
 .PHONY: help cluster-up cluster-start cluster-bootstrap cluster-stop cluster-down cluster-delete minikube-up minikube-stop minikube-down install-argocd status argocd-password port-forward-argocd render-argocd preflight
 
@@ -29,6 +30,7 @@ help:
 	@echo ""
 	@echo "Options"
 	@echo "  PROFILE=openpanel-rebuild  Minikube profile name"
+	@echo "  ENVIRONMENT=dev|prod  ArgoCD environment (default: dev)"
 	@echo ""
 
 preflight:
@@ -61,7 +63,7 @@ minikube-down:
 	@minikube delete -p "$(PROFILE)"
 
 install-argocd:
-	@bash scripts/install-argocd.sh
+	@bash scripts/install-argocd.sh "$(ENVIRONMENT)"
 
 status:
 	@echo "Context"
