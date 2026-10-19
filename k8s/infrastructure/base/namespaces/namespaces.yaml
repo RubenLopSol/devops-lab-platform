@@ -13,3 +13,11 @@ metadata:
   name: argo-rollouts
   labels:
     app.kubernetes.io/part-of: argo-rollouts
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sealed-secrets
+  labels:
+    app.kubernetes.io/part-of: sealed-secrets
