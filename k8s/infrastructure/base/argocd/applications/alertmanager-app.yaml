@@ -16,6 +16,16 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      name: alertmanager
+      namespace: observability
+      jsonPointers:
+        - /spec/volumeClaimTemplates/0/apiVersion
+        - /spec/volumeClaimTemplates/0/kind
+        - /spec/volumeClaimTemplates/0/metadata/creationTimestamp
+        - /spec/volumeClaimTemplates/0/status
   syncPolicy:
     automated:
       prune: true
@@ -24,6 +34,7 @@ spec:
       - ServerSideApply=true
       - ServerSideDiff=true
       - CreateNamespace=false
+      - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:
