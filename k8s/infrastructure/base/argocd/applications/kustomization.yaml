@@ -7,3 +7,5 @@ resources:
   - local-path-provisioner-app.yaml
   - argo-rollouts-app.yaml
   - sealed-secrets-app.yaml
+  - prometheus-app.yaml
+  - alertmanager-app.yaml
