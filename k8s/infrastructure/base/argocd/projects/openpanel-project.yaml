@@ -16,6 +16,8 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: sealed-secrets
       server: https://kubernetes.default.svc
+    - namespace: observability
+      server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
@@ -38,3 +40,13 @@ spec:
       kind: Role
     - group: rbac.authorization.k8s.io
       kind: RoleBinding
+    - group: apps
+      kind: DaemonSet
+    - group: monitoring.coreos.com
+      kind: Prometheus
+    - group: monitoring.coreos.com
+      kind: PrometheusRule
+    - group: monitoring.coreos.com
+      kind: ServiceMonitor
+    - group: apps
+      kind: StatefulSet
