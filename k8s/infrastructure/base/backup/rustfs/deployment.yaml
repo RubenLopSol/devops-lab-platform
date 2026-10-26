@@ -1,40 +1,35 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: minio
+  name: rustfs
   labels:
-    app: minio
+    app: rustfs
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: minio
+      app: rustfs
   template:
     metadata:
       labels:
-        app: minio
+        app: rustfs
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       initContainers:
         - name: fix-permissions
           image: busybox:1.36.1
-          command:
-            - sh
-            - -c
-            - chown -R 1000:1000 /data
+          command: ["sh", "-c", "chown -R 10001:10001 /data"]
           securityContext:
             runAsUser: 0
             runAsNonRoot: false
             allowPrivilegeEscalation: false
             capabilities:
-              drop:
-                - ALL
-              add:
-                - CHOWN
-                - DAC_OVERRIDE
+              drop: ["ALL"]
+              add: ["CHOWN", "DAC_OVERRIDE"]
           resources:
             requests:
               cpu: 50m
@@ -46,31 +41,34 @@ spec:
             - name: data
               mountPath: /data
       containers:
-        - name: minio
-          image: minio/minio:RELEASE.2025-10-15T17-29-55Z
+        - name: rustfs
+          image: rustfs/rustfs:1.0.3
           imagePullPolicy: IfNotPresent
-          command:
-            - minio
-            - server
-            - /data
-            - --console-address
-            - :9001
+          args: ["/data"]
           ports:
             - name: api
               containerPort: 9000
             - name: console
               containerPort: 9001
           env:
-            - name: MINIO_ROOT_USER
+            - name: RUSTFS_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
                   name: minio-credentials
                   key: MINIO_ROOT_USER
-            - name: MINIO_ROOT_PASSWORD
+            - name: RUSTFS_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: minio-credentials
                   key: MINIO_ROOT_PASSWORD
+            - name: RUSTFS_ADDRESS
+              value: ":9000"
+            - name: RUSTFS_CONSOLE_ADDRESS
+              value: ":9001"
+            - name: RUSTFS_CONSOLE_ENABLE
+              value: "true"
+            - name: RUSTFS_REGION
+              value: minio
           resources:
             requests:
               cpu: 100m
@@ -80,14 +78,14 @@ spec:
               memory: 1Gi
           livenessProbe:
             httpGet:
-              path: /minio/health/live
+              path: /health
               port: api
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 10
           readinessProbe:
             httpGet:
-              path: /minio/health/ready
+              path: /health/ready
               port: api
             initialDelaySeconds: 10
             periodSeconds: 10
@@ -95,8 +93,7 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
-              drop:
-                - ALL
+              drop: ["ALL"]
           volumeMounts:
             - name: data
               mountPath: /data

@@ -112,8 +112,8 @@ jobs:
       - name: Render Grafana dev
         run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/observability/grafana > /tmp/grafana-dev.yaml
 
-      - name: Render MinIO dev
-        run: kustomize build k8s/infrastructure/overlays/dev/backup/minio > /tmp/minio-dev.yaml
+      - name: Render RustFS dev
+        run: kustomize build k8s/infrastructure/overlays/dev/backup/rustfs > /tmp/rustfs-dev.yaml
 
       - name: Render Velero operator dev
         run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/backup/velero-operator > /tmp/velero-operator-dev.yaml
@@ -143,7 +143,7 @@ jobs:
             /tmp/promtail-dev.yaml \
             /tmp/tempo-dev.yaml \
             /tmp/grafana-dev.yaml \
-            /tmp/minio-dev.yaml \
+            /tmp/rustfs-dev.yaml \
             /tmp/velero-operator-dev.yaml \
             /tmp/velero-config-dev.yaml
   secret-scan:

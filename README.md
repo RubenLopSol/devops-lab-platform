@@ -531,7 +531,24 @@ El stack recoge logs de stdout/stderr de OpenPanel y métricas del clúster/nodo
 OpenPanel no expone /metrics ni emite trazas OpenTelemetry. Tempo está instalado
 y preparado, pero recibir trazas propias requiere instrumentar la aplicación.
 
-Pendiente para cerrar la secuencia de infraestructura acordada: añadir backup
-siguiendo el patrón del proyecto original (Velero y almacenamiento de destino,
-simplificado para este laboratorio) y probar una restauración. No desplegar
-overlays prod en openpanel-rebuild.
+### Backup
+
+El backup sigue el patrón del proyecto original: Velero, un destino S3 local y
+una Schedule diaria, gestionados por Applications separadas de ArgoCD. El
+destino local usa RustFS (`rustfs/rustfs:1.0.3`) con API S3, PVC `local-path` de
+5 Gi y el bucket `velero-backups`. Velero se instala con el chart 12.2.1
+(aplicación 1.18.2) y el plugin AWS 1.14.4; usa File System Backup mediante
+node-agent y no usa snapshots.
+
+La Schedule `daily-full-backup` incluye los namespaces `openpanel` y
+`observability`, corre a las 02:00 y conserva los backups 30 días. La imagen
+Docker de MinIO dejó de estar disponible, por lo que se usa RustFS como
+implementación S3 compatible; las credenciales selladas y el PVC mantienen sus
+nombres históricos `minio-credentials` y `minio-data` para conservar el estado
+local durante el cambio.
+
+RustFS y Velero se han renderizado localmente; falta confirmar su estado vivo,
+ejecutar un backup manual y probar una restauración en namespaces de prueba.
+Este destino comparte el mismo clúster y disco de Minikube: sirve para aprender
+y validar el flujo, pero no protege frente a la pérdida del nodo o del clúster.
+No desplegar overlays prod en `openpanel-rebuild`.
