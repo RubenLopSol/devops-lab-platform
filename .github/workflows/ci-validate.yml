@@ -106,6 +106,9 @@ jobs:
       - name: Render Promtail dev
         run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/observability/promtail > /tmp/promtail-dev.yaml
 
+      - name: Render Tempo dev
+        run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/observability/tempo > /tmp/tempo-dev.yaml
+
       - name: Validate Kubernetes schemas
         run: |
           kubeconform \
@@ -125,7 +128,8 @@ jobs:
             /tmp/kube-prometheus-stack-dev.yaml \
             /tmp/alertmanager-dev.yaml \
             /tmp/loki-dev.yaml \
-            /tmp/promtail-dev.yaml
+            /tmp/promtail-dev.yaml \
+            /tmp/tempo-dev.yaml
   secret-scan:
     name: Secret Detection
     runs-on: ubuntu-latest
