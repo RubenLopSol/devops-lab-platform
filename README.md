@@ -534,11 +534,13 @@ y preparado, pero recibir trazas propias requiere instrumentar la aplicación.
 ### Backup
 
 El backup sigue el patrón del proyecto original: Velero, un destino S3 local y
-una Schedule diaria, gestionados por Applications separadas de ArgoCD. El
-destino local usa RustFS (`rustfs/rustfs:1.0.3`) con API S3, PVC `local-path` de
-5 Gi y el bucket `velero-backups`. Velero se instala con el chart 12.2.1
-(aplicación 1.18.2) y el plugin AWS 1.14.4; usa File System Backup mediante
-node-agent y no usa snapshots.
+una Schedule diaria, gestionados por Applications separadas de ArgoCD. La
+Application histórica `minio` despliega RustFS (`rustfs/rustfs:1.0.3`) con API
+S3, PVC `local-path` de 5 Gi y el bucket `velero-backups`. Se conserva ese
+nombre de Application y los nombres `minio-data` y `minio-credentials` para
+mantener el seguimiento de ArgoCD, la claim y el SealedSecret existentes.
+Velero se instala con el chart 12.2.1 (aplicación 1.18.2) y el plugin AWS
+1.14.4; usa File System Backup mediante node-agent y no usa snapshots.
 
 La Schedule `daily-full-backup` incluye los namespaces `openpanel` y
 `observability`, corre a las 02:00 y conserva los backups 30 días. La imagen
@@ -547,8 +549,19 @@ implementación S3 compatible; las credenciales selladas y el PVC mantienen sus
 nombres históricos `minio-credentials` y `minio-data` para conservar el estado
 local durante el cambio.
 
-RustFS y Velero se han renderizado localmente; falta confirmar su estado vivo,
-ejecutar un backup manual y probar una restauración en namespaces de prueba.
+La validación del 26-10-2026 terminó con RustFS y las Applications de Velero en
+Synced/Healthy, y `BackupStorageLocation/default` en Available. El backup
+manual `manual-validation-20261026` terminó Completed con 214/214 recursos. La
+restauración `validation-restore-retry-20261026` terminó Completed con 177/177
+recursos y cinco trabajos de restauración de volúmenes Completed. Sus
+advertencias corresponden a CRDs y ClusterRoleBindings ya instalados y a
+recursos que ya existían tras un primer intento. Se restauró en namespaces de
+prueba administrados temporalmente por GitOps y luego se retiraron; la
+Application `namespaces` quedó Synced/Healthy.
+
+La Schedule `daily-full-backup` incluye `openpanel` y `observability`, corre a
+las 02:00 y conserva los backups 30 días. La imagen Docker de MinIO dejó de
+estar disponible, por lo que se usa RustFS como implementación S3 compatible.
 Este destino comparte el mismo clúster y disco de Minikube: sirve para aprender
 y validar el flujo, pero no protege frente a la pérdida del nodo o del clúster.
 No desplegar overlays prod en `openpanel-rebuild`.
