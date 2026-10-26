@@ -109,6 +109,9 @@ jobs:
       - name: Render Tempo dev
         run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/observability/tempo > /tmp/tempo-dev.yaml
 
+      - name: Render Grafana dev
+        run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/observability/grafana > /tmp/grafana-dev.yaml
+
       - name: Validate Kubernetes schemas
         run: |
           kubeconform \
@@ -129,7 +132,8 @@ jobs:
             /tmp/alertmanager-dev.yaml \
             /tmp/loki-dev.yaml \
             /tmp/promtail-dev.yaml \
-            /tmp/tempo-dev.yaml
+            /tmp/tempo-dev.yaml \
+            /tmp/grafana-dev.yaml
   secret-scan:
     name: Secret Detection
     runs-on: ubuntu-latest

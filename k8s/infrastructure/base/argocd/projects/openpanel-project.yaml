@@ -32,6 +32,10 @@ spec:
       kind: ConfigMap
     - group: ""
       kind: Secret
+    - group: bitnami.com
+      kind: SealedSecret
+    - group: ""
+      kind: PersistentVolumeClaim
     - group: ""
       kind: Service
     - group: apps
