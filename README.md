@@ -137,7 +137,7 @@ Namespaces principales:
 ```text
 argocd                ArgoCD y sus componentes
 openpanel             Aplicacion OpenPanel
-observability         Prometheus y Alertmanager
+observability         Stack de métricas, alertas, logs, trazas y dashboards
 sealed-secrets        Controlador Sealed Secrets
 argo-rollouts         Controlador Argo Rollouts
 local-path-storage    Controlador de almacenamiento local
@@ -149,7 +149,8 @@ Comandos utiles:
 kubectl config use-context openpanel-rebuild
 kubectl get applications -n argocd
 kubectl get pods -n argocd
-kubectl get deployment openpanel-app -n openpanel
+kubectl get rollout openpanel-app -n openpanel
+kubectl argo rollouts get rollout openpanel-app -n openpanel
 ```
 
 ## ArgoCD
@@ -215,9 +216,13 @@ alertmanager
   watches: k8s/infrastructure/overlays/dev/observability/alertmanager
   applies: Alertmanager y su ServiceMonitor
 
+grafana / loki / promtail / tempo
+  watches: k8s/infrastructure/overlays/dev/observability/<component>
+  applies: dashboards/data sources, logs, and traces backend
+
 openpanel-dev
   watches: k8s/apps/overlays/dev/openpanel
-  applies: real OpenPanel Kubernetes resources
+  applies: OpenPanel Rollout, Services, and ConfigMap
 ```
 
 Esto sigue el patron app-of-apps:
@@ -229,12 +234,14 @@ Application/bootstrap-app
    ↓ gestiona el overlay dev de ArgoCD desde Git
 AppProject/openpanel + Applications independientes
    ├── Application/openpanel-dev
-   │     ↓ despliega Deployment/Service/ConfigMap en openpanel
+   │     ↓ despliega Rollout/Services/ConfigMap en openpanel
    │     └── Pods de OpenPanel
    ├── Application/prometheus
    │     ↓ instala kube-prometheus-stack en observability
    ├── Application/alertmanager
    │     ↓ instala Alertmanager y su ServiceMonitor
+   ├── Applications grafana/loki/promtail/tempo
+   │     ↓ dashboards, logs y backend de trazas
    └── Application/local-path-provisioner (project: default)
          ↓ despliega RBAC/controller en local-path-storage
          └── StorageClass/local-path (cluster-scoped)
@@ -280,18 +287,17 @@ Flujo validado durante el rebuild:
 8. La Application openpanel-dev apunta al nuevo release tag.
 9. ArgoCD detecta el cambio en Git.
 10. ArgoCD sincroniza el cluster.
-11. Kubernetes actualiza el Deployment con RollingUpdate.
+11. Argo Rollouts actualiza OpenPanel con estrategia blue-green.
 12. La app responde con el nuevo comportamiento.
 ```
 
-Ejemplo real validado:
+Estado desplegado y verificado:
 
-```text
-Commit app:       558a42f
-Image tag:        main-558a42f
-ArgoCD revision:  release/main-558a42f
-Deployment image: ghcr.io/rubenlopsol/devops-lab-app:main-558a42f
-```
+- Imagen/tag de la app: main-d756099
+- Revisión de ArgoCD: release/platform-55e1367
+- Imagen del Rollout: ghcr.io/rubenlopsol/devops-lab-app:main-d756099
+- Estado: Healthy / Completed (1 réplica)
+
 
 ## Recrear El Cluster Desde Cero
 
@@ -389,28 +395,21 @@ make port-forward-argocd
 make argocd-password
 ```
 
-## Deployment Strategy
+## Estrategia De Despliegue
 
-El Deployment de OpenPanel usa:
+OpenPanel usa Rollout de Argo Rollouts con estrategia blue-green:
 
-```yaml
-strategy:
-  type: RollingUpdate
-  rollingUpdate:
-    maxSurge: 25%
-    maxUnavailable: 25%
-```
+- Servicio activo: openpanel-app
+- Servicio preview: openpanel-app-preview
+- Promoción automática: desactivada
+- scaleDownDelaySeconds: 600
+- Probes de salud: /health
 
-Tambien usa probes sobre `/health`:
+La promoción de una nueva versión requiere revisar el preview y ejecutar
+kubectl argo rollouts promote openpanel-app -n openpanel. El estado comprobado
+es Healthy/Completed con una réplica lista. El nodo único de Minikube sigue
+siendo un punto único de fallo.
 
-```text
-readinessProbe  Decide si el pod puede recibir trafico.
-livenessProbe   Decide si el contenedor esta vivo o debe reiniciarse.
-```
-
-Con `replicas: 1`, Kubernetes intenta crear un pod nuevo, esperar a que este
-Ready y despues retirar el pod anterior. Esto reduce downtime, aunque no da alta
-disponibilidad real porque solo hay una replica.
 
 ## Comandos De Verificacion
 
@@ -445,7 +444,8 @@ kubectl get application openpanel-dev -n argocd -o jsonpath='{.spec.source.targe
 Imagen desplegada:
 
 ```bash
-kubectl get deployment openpanel-app -n openpanel -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
+kubectl get rollout openpanel-app -n openpanel -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
+kubectl argo rollouts get rollout openpanel-app -n openpanel
 ```
 
 Probar la app:
@@ -478,62 +478,60 @@ https://localhost:8081
 - No se usan instalaciones manuales con `helm install` para componentes de
   plataforma.
 - Las herramientas de plataforma se incorporan siguiendo el orden y el patrón
-  del proyecto original. La wave 2 de observabilidad ya está desplegada con
-  Helm renderizado por Kustomize y gestionado por ArgoCD.
+  del proyecto original. Las waves 2 y 3 de observabilidad están desplegadas
+  con Helm renderizado por Kustomize y gestionadas por ArgoCD.
 
-## Estado Actual Y Siguiente Paso
+## Estado Actual Y Pendiente
 
-El clúster local usa el perfil y contexto Minikube `openpanel-rebuild`. Las
-Applications `bootstrap-app`, `argo-rollouts`, `local-path-provisioner`,
-`namespaces`, `openpanel-dev`, `sealed-secrets`, `prometheus` y `alertmanager`
-están `Synced`/`Healthy` en ArgoCD.
+Verificado el 26-10-2026 en Minikube openpanel-rebuild: las Applications
+bootstrap-app, argo-rollouts, local-path-provisioner, namespaces, openpanel-dev,
+sealed-secrets, prometheus, alertmanager, grafana, loki, promtail y tempo están
+Synced/Healthy.
 
-OpenPanel sigue siendo un `Deployment`; el controlador Argo Rollouts está
-instalado, pero la migración de la aplicación a `Rollout` queda diferida.
-Sealed Secrets está instalado, aunque aún no existe un `SealedSecret` ni una
-configuración secreta consumida por OpenPanel.
+OpenPanel usa Rollout/openpanel-app con estrategia blue-green, estado
+Healthy/Completed, una réplica lista e imagen
+ghcr.io/rubenlopsol/devops-lab-app:main-d756099. La Application openpanel-dev
+está fijada a release/platform-55e1367. La promoción de nuevas versiones es
+manual.
+
+Grafana (chart 8.5.2, aplicación 11.2.1) responde en su API interna
+(/api/health: database ok), tiene PVC de 1 Gi Bound y el SealedSecret de
+credenciales se descifró a un Secret. Su configuración provisiona datasources
+de Prometheus, Loki y Tempo; el dashboard de clúster está cargado en un
+ConfigMap etiquetado para el sidecar. Los tres datasources se comprobaron desde Grafana: Prometheus y Loki devuelven
+estado OK; la búsqueda de Tempo devuelve HTTP 200 a través del datasource.
+Por eso, el datasource de Tempo se validó con una búsqueda real, que respondió correctamente. No hay
+trazas de OpenPanel todavía.
 
 La observabilidad sigue la separación del proyecto original en seis
-Applications dentro de `observability`:
+Applications dentro de observability:
 
 | Sync wave | Application | Función |
 | --- | --- | --- |
-| 2 | `prometheus` | Chart `kube-prometheus-stack`: Prometheus Operator, Prometheus, node exporter y kube-state-metrics; Grafana y Alertmanager integrados desactivados |
-| 2 | `alertmanager` | Gestión y agrupación de alertas |
-| 3 | `grafana` | Consultas, dashboards y fuentes de datos |
-| 3 | `loki` | Almacenamiento y consulta de logs |
-| 3 | `promtail` | Recogida de logs de pods y envío a Loki |
-| 3 | `tempo` | Recepción y consulta de trazas OTLP |
+| 2 | prometheus | Prometheus Operator, Prometheus, node exporter y kube-state-metrics |
+| 2 | alertmanager | Gestión y agrupación de alertas |
+| 3 | grafana | Consultas, dashboards y fuentes de datos |
+| 3 | loki | Almacenamiento y consulta de logs |
+| 3 | promtail | Recogida de logs de pods y envío a Loki |
+| 3 | tempo | Recepción y consulta de trazas OTLP |
 
-Las dos Applications de wave 2 están desplegadas en `dev`, usando los charts
-fijados `kube-prometheus-stack` `65.1.1` y `alertmanager` `1.13.0`, renderizados
-por Kustomize. El stack recoge métricas de Kubernetes y del nodo. Alertmanager
-se mantiene separado; su `ServiceMonitor` recoge sus métricas en `/metrics` y
-Prometheus tiene configurado el endpoint de Alertmanager. No hay receptor de
-notificaciones configurado.
+El chart kube-prometheus-stack tiene desactivados Grafana y Alertmanager
+integrados; cada componente se gestiona como Application separada. Alertmanager
+está conectado a Prometheus, pero no tiene receptor de notificaciones.
 
-En Minikube no se habilitó ingress ni un selector para nodos dedicados; las UIs
-se usarán mediante `kubectl port-forward`. Los PVC de Prometheus (5 Gi) y
-Alertmanager (1 Gi) están `Bound` con `local-path`.
+En Minikube no se habilitó ingress ni nodos dedicados; las UIs se usan mediante
+kubectl port-forward. Los PVC de Prometheus (5 Gi), Alertmanager (1 Gi), Grafana
+(1 Gi), Loki (10 Gi) y Tempo (1 Gi) están Bound con local-path.
 
-Alertmanager apareció inicialmente `OutOfSync` porque Kubernetes añade campos
-normalizados (`apiVersion`, `kind`, `metadata.creationTimestamp` y `status`) al
-elemento de `volumeClaimTemplates` del StatefulSet. La Application ignora solo
-esos JSON Pointers y usa `RespectIgnoreDifferences=true`; tras integrarlo,
-Alertmanager quedó `Synced`/`Healthy`. El tamaño y la StorageClass del PVC
-siguen siendo diferencias gestionadas por Git.
+El workflow de CI 40313373364 pasó el 26-10-2026, incluyendo Gitleaks y
+Kubeconform para Grafana. CI valida, pero no despliega; ArgoCD sincroniza los
+cambios integrados en main.
 
-La validación de CI renderiza los dos charts de observabilidad y los incluye en
-Kubeconform. La última ejecución de `ci-validate.yml` pasó. CI valida, pero no
-despliega; ArgoCD sincroniza los cambios integrados en `main`.
+El stack recoge logs de stdout/stderr de OpenPanel y métricas del clúster/nodo.
+OpenPanel no expone /metrics ni emite trazas OpenTelemetry. Tempo está instalado
+y preparado, pero recibir trazas propias requiere instrumentar la aplicación.
 
-El stack puede recoger logs de stdout/stderr de OpenPanel y métricas de
-Kubernetes/nodo sin modificar la app. OpenPanel solo ofrece `/health`: no
-expone `/metrics` ni emite trazas OpenTelemetry, así que sus métricas HTTP y
-trazas requieren un cambio posterior de la aplicación.
-
-Siguiente paso: preparar wave 3 (`grafana`, `loki`, `promtail` y `tempo`) con el
-mismo patrón GitOps y las versiones fijadas del proyecto original. Después se
-validarán dashboards y el flujo de logs/trazas. Backup y otros componentes
-originales siguen pendientes. No desplegar overlays `prod` en
-`openpanel-rebuild`.
+Pendiente para cerrar la secuencia de infraestructura acordada: añadir backup
+siguiendo el patrón del proyecto original (Velero y almacenamiento de destino,
+simplificado para este laboratorio) y probar una restauración. No desplegar
+overlays prod en openpanel-rebuild.
