@@ -7,4 +7,5 @@ useDefault = true
 description = "Known false positives"
 paths = [
   '''k8s/.*/charts/.*''',
+  '''k8s/infrastructure/base/observability/grafana/admin-sealedsecret\.yaml''',
 ]
