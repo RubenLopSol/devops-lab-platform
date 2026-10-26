@@ -1,5 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: openpanel-app
   namespace: openpanel
@@ -10,6 +10,13 @@ spec:
   selector:
     matchLabels:
       app: openpanel-app
+  revisionHistoryLimit: 3
+  strategy:
+    blueGreen:
+      activeService: openpanel-app
+      previewService: openpanel-app-preview
+      autoPromotionEnabled: false
+      scaleDownDelaySeconds: 600
   template:
     metadata:
       labels:

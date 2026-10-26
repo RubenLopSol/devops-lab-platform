@@ -50,3 +50,5 @@ spec:
       kind: ServiceMonitor
     - group: apps
       kind: StatefulSet
+    - group: argoproj.io
+      kind: Rollout
