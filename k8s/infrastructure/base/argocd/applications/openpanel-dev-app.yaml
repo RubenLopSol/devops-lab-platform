@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: https://github.com/RubenLopSol/devops-lab-platform.git
-    targetRevision: release/platform-c4f3186
+    targetRevision: release/platform-55e1367
     path: k8s/apps/overlays/dev/openpanel
 
   destination:
