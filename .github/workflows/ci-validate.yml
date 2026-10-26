@@ -115,6 +115,9 @@ jobs:
       - name: Render RustFS dev
         run: kustomize build k8s/infrastructure/overlays/dev/backup/rustfs > /tmp/rustfs-dev.yaml
 
+      - name: Render platform namespaces
+        run: kustomize build k8s/infrastructure/base/namespaces > /tmp/namespaces.yaml
+
       - name: Render Velero operator dev
         run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/backup/velero-operator > /tmp/velero-operator-dev.yaml
 
@@ -144,6 +147,7 @@ jobs:
             /tmp/tempo-dev.yaml \
             /tmp/grafana-dev.yaml \
             /tmp/rustfs-dev.yaml \
+            /tmp/namespaces.yaml \
             /tmp/velero-operator-dev.yaml \
             /tmp/velero-config-dev.yaml
   secret-scan:
