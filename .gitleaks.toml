@@ -8,4 +8,5 @@ description = "Known false positives"
 paths = [
   '''k8s/.*/charts/.*''',
   '''k8s/infrastructure/base/observability/grafana/admin-sealedsecret\.yaml''',
+  '''k8s/infrastructure/overlays/dev/backup/.*sealedsecret\.yaml''',
 ]

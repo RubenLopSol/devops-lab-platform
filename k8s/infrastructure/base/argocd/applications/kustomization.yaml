@@ -13,3 +13,6 @@ resources:
   - promtail-app.yaml
   - tempo-app.yaml
   - grafana-app.yaml
+  - minio-app.yaml
+  - velero-operator-app.yaml
+  - velero-config-app.yaml

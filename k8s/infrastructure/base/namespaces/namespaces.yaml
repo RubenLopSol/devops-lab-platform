@@ -29,3 +29,19 @@ metadata:
   name: observability
   labels:
     app.kubernetes.io/part-of: observability
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: backup
+  labels:
+    app.kubernetes.io/part-of: openpanel-backup
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: velero
+  labels:
+    app.kubernetes.io/part-of: openpanel-backup

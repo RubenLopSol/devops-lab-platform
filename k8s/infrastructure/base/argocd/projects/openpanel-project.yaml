@@ -18,6 +18,10 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: observability
       server: https://kubernetes.default.svc
+    - namespace: backup
+      server: https://kubernetes.default.svc
+    - namespace: velero
+      server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
@@ -58,3 +62,13 @@ spec:
       kind: StatefulSet
     - group: argoproj.io
       kind: Rollout
+    - group: batch
+      kind: Job
+    - group: velero.io
+      kind: BackupStorageLocation
+    - group: velero.io
+      kind: Schedule
+    - group: velero.io
+      kind: Backup
+    - group: velero.io
+      kind: Restore

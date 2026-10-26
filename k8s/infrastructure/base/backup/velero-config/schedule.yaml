@@ -1,0 +1,14 @@
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-full-backup
+spec:
+  schedule: "0 2 * * *"
+  template:
+    includedNamespaces:
+      - openpanel
+      - observability
+    defaultVolumesToFsBackup: true
+    snapshotVolumes: false
+    ttl: 720h0m0s
+    storageLocation: default

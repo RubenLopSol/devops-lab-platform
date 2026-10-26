@@ -112,6 +112,15 @@ jobs:
       - name: Render Grafana dev
         run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/observability/grafana > /tmp/grafana-dev.yaml
 
+      - name: Render MinIO dev
+        run: kustomize build k8s/infrastructure/overlays/dev/backup/minio > /tmp/minio-dev.yaml
+
+      - name: Render Velero operator dev
+        run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/backup/velero-operator > /tmp/velero-operator-dev.yaml
+
+      - name: Render Velero config dev
+        run: kustomize build k8s/infrastructure/overlays/dev/backup/velero-config > /tmp/velero-config-dev.yaml
+
       - name: Validate Kubernetes schemas
         run: |
           kubeconform \
@@ -133,7 +142,10 @@ jobs:
             /tmp/loki-dev.yaml \
             /tmp/promtail-dev.yaml \
             /tmp/tempo-dev.yaml \
-            /tmp/grafana-dev.yaml
+            /tmp/grafana-dev.yaml \
+            /tmp/minio-dev.yaml \
+            /tmp/velero-operator-dev.yaml \
+            /tmp/velero-config-dev.yaml
   secret-scan:
     name: Secret Detection
     runs-on: ubuntu-latest
