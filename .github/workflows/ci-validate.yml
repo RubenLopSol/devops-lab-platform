@@ -100,6 +100,12 @@ jobs:
       - name: Render Alertmanager dev
         run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/observability/alertmanager > /tmp/alertmanager-dev.yaml
 
+      - name: Render Loki dev
+        run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/observability/loki > /tmp/loki-dev.yaml
+
+      - name: Render Promtail dev
+        run: kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone k8s/infrastructure/overlays/dev/observability/promtail > /tmp/promtail-dev.yaml
+
       - name: Validate Kubernetes schemas
         run: |
           kubeconform \
@@ -117,7 +123,9 @@ jobs:
             /tmp/argo-rollouts-dev.yaml \
             /tmp/argo-rollouts-prod.yaml \
             /tmp/kube-prometheus-stack-dev.yaml \
-            /tmp/alertmanager-dev.yaml
+            /tmp/alertmanager-dev.yaml \
+            /tmp/loki-dev.yaml \
+            /tmp/promtail-dev.yaml
   secret-scan:
     name: Secret Detection
     runs-on: ubuntu-latest
